@@ -6,11 +6,6 @@ import './randomChar.scss';
 import mjolnir from '../../resources/img/mjolnir.png';
 
 class RandomChar extends Component {
-    constructor(props) {
-        super(props);
-        this.updateChar(); // TODO: вынести из конструктора
-    };
-
     state = {
         char: {},
         loading: true,
@@ -20,11 +15,21 @@ class RandomChar extends Component {
     errMessage = null;
     marvelService = new MarvelService();
 
+    componentDidMount() {
+        this.updateChar();
+    };
+
     onCharLoaded = (char) => {
         this.setState({
             char,
             loading: false
         });
+    };
+
+    onCharLoading = () => {
+        this.setState({
+            loading: true
+        })
     };
 
     onError = (err) => {
@@ -33,10 +38,11 @@ class RandomChar extends Component {
             loading: false,
             error: true
         });
-    }
+    };
 
     updateChar = () => {
         const id = Math.floor(Math.random() * 20) + 1;
+        this.onCharLoading();
         this.marvelService.getCharacter(id)
             .then(this.onCharLoaded)
             .catch(this.onError);
@@ -77,26 +83,26 @@ class RandomChar extends Component {
 
 const View = ({ char }) => {
     const { name, description, thumbnail, homepage, wiki } = char;
-
-    const descriptionText = description
-        ? description
-        : 'Описание отсутствует';
-
+    const descriptionText = description ? description : 'Описание отсутствует';
+    let imgStyle = thumbnail === 'http://i.annihil.us/u/prod/marvel/i/mg/b/40/image_not_available.jpg'
+        ? { 'objectFit': 'contain' }
+        : { 'objectFit': 'cover' };
     return (
         <div className="randomchar__block">
             <img
                 src={thumbnail}
                 alt={`Random character`}
                 className="randomchar__img"
-                onError={(e) => {
-                    if (name) {
-                        const imgSrcFileName = name.toLowerCase().replace(/\s+/g, '-');
-                        const imgSrc = `${process.env.PUBLIC_URL}/img/${imgSrcFileName}.jpg`;
-                        if (!e.target.src.includes(imgSrc)) { // защита от зацикливания, если imgSrc не загрузилась с первого раза
-                            e.target.src = imgSrc;
-                        };
-                    };
-                }}
+                style={imgStyle}
+            // onError={(e) => {
+            //     if (name) {
+            //         const imgSrcFileName = name.toLowerCase().replace(/\s+/g, '-');
+            //         const imgSrc = `${process.env.PUBLIC_URL}/img/${imgSrcFileName}.jpg`;
+            //         if (!e.target.src.includes(imgSrc)) { // защита от зацикливания, если imgSrc не загрузилась с первого раза
+            //             e.target.src = imgSrc;
+            //         };
+            //     };
+            // }}
             />
             <div className="randomchar__info">
                 <p className="randomchar__name">{name}</p>
