@@ -3,6 +3,8 @@ import PropTypes from 'prop-types';
 import Spinner from '../spinner/Spinner';
 import ErrorMessage from '../errorMessage/ErrorMessage';
 import MarvelService from '../../services/MarvelService';
+import { Tooltip } from 'react-tooltip';
+import 'react-tooltip/dist/react-tooltip.css';
 import './charList.scss';
 
 class CharList extends Component {
@@ -12,9 +14,11 @@ class CharList extends Component {
         newItemsLoading: false,
         offset: 0,
         error: false,
-        charEnded: false
+        charEnded: false,
+        focusedCharId: -1
     };
 
+    selectedCharId = -1;
     errMessage = null;
     marvelService = new MarvelService();
 
@@ -53,16 +57,56 @@ class CharList extends Component {
         });
     };
 
+    onCharSelected = (id) => {
+        this.selectedCharId = id;
+        this.props.onCharSelected(id);
+    };
+
+    onFocus = (id) => {
+        this.setState({ focusedCharId: id });
+    };
+
+    onBlur = () => {
+        this.setState({ focusedCharId: -1 });
+    };
+
+    onKeyDown = (e, id) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            this.onCharSelected(id);
+        };
+    };
+
     renderItems(arr) {
+        const { focusedCharId } = this.state;
+
         const items = arr.map((item) => {
-            let imgStyle = item.thumbnail === 'http://i.annihil.us/u/prod/marvel/i/mg/b/40/image_not_available.jpg'
+            const itemClassName = item.id === focusedCharId ? 'char__item char__item_selected' : 'char__item';
+            const imgStyle = item.thumbnail === 'http://i.annihil.us/u/prod/marvel/i/mg/b/40/image_not_available.jpg'
                 ? { 'objectFit': 'unset' }
                 : { 'objectFit': 'cover' };
+            const showTooltip = item.id === focusedCharId && item.id !== this.selectedCharId;
 
             return (
-                <li className="char__item" key={item.id} onClick={() => this.props.onCharSelected(item.id)}>
+                <li
+                    className={itemClassName}
+                    key={item.id}
+                    tabIndex={0}
+                    data-tooltip-id={`tooltip-${item.id}`}
+                    onFocus={() => this.onFocus(item.id)}
+                    onBlur={this.onBlur}
+                    onClick={() => this.onCharSelected(item.id)}
+                    onKeyDown={(e) => this.onKeyDown(e, item.id)}>
                     <img src={item.thumbnail} alt={item.name} style={imgStyle} />
                     <div className="char__name">{item.name}</div>
+                    {showTooltip && (
+                        <Tooltip
+                            id={`tooltip-${item.id}`}
+                            isOpen={true}
+                            place="top"
+                            content="Press Enter|Space or click on a character to see an information"
+                        />
+                    )}
                 </li>
             );
         });
@@ -71,7 +115,6 @@ class CharList extends Component {
 
     render() {
         const { charList, loading, newItemsLoading, offset, error, charEnded } = this.state;
-
         const items = this.renderItems(charList);
 
         return (
