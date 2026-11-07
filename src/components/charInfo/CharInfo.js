@@ -3,16 +3,13 @@ import PropTypes from 'prop-types';
 import Spinner from '../spinner/Spinner';
 import ErrorMessage from '../errorMessage/ErrorMessage';
 import Skeleton from '../skeleton/Skeleton';
-import MarvelService from '../../services/MarvelService';
+import useMarvelService from '../../services/MarvelService';
 import './charInfo.scss';
 
 const CharInfo = (props) => {
     const [char, setChar] = useState(null);
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState(false);
 
-    let errMessage = null;
-    const marvelService = new MarvelService();
+    const { loading, error, getCharacter, clearError } = useMarvelService();
 
     useEffect(() => {
         updateChar();
@@ -25,16 +22,10 @@ const CharInfo = (props) => {
             return;
         };
 
-        setLoading(true);
-        marvelService.getCharacter(charId)
+        clearError();
+        getCharacter(charId)
             .then((char) => {
                 setChar(char);
-                setLoading(false);
-            })
-            .catch((err) => {
-                errMessage = err.message;
-                setError(true);
-                setLoading(false);
             });
     };
 
@@ -43,10 +34,7 @@ const CharInfo = (props) => {
             {loading ?
                 <Spinner />
                 : error ?
-                    <div style={{ display: 'flex', flexDirection: 'column' }}>
-                        <ErrorMessage />
-                        <span style={{ color: 'red', fontSize: '15px', textAlign: 'center' }}>{errMessage}</span>
-                    </div>
+                    <ErrorMessage />
                     : char ?
                         <View char={char} />
                         : <Skeleton />

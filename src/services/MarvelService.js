@@ -1,27 +1,24 @@
-class MarvelService {
-  _apiBase = 'https://marvel-server-zeta.vercel.app/';
-  _apiKey = 'apikey=d4eecb0c66dedbfae4eab45d312fc1df';
-  _baseOffset = 0;
+import { useHttp } from '../hooks/http.hook';
 
-  getResource = async (url) => {
-    let res = await fetch(url);
-    if (!res.ok) {
-      throw new Error(`Couldn't fetch ${url}, status: ${res.status}`);
-    };
-    return await res.json();
+const useMarvelService = () => {
+  const { loading, error, request, clearError } = useHttp();
+
+  //const _apiBase = 'https://marvel-server-zeta.vercel.app/';
+  const _apiBase = ''; // в package.json добавлен proxy: "https://marvel-server-zeta.vercel.app", чтобы браузер не применял в запросах CORS
+  const _apiKey = 'apikey=d4eecb0c66dedbfae4eab45d312fc1df';
+  const _baseOffset = 0;
+
+  const getAllCharacters = async (offset = _baseOffset) => {
+    const res = await request(`${_apiBase}characters?limit=9&offset=${offset}&${_apiKey}`);
+    return res.data.results.map(_transformCharacter);
   };
 
-  getAllCharacters = async (offset = this._baseOffset) => {
-    const res = await this.getResource(`${this._apiBase}characters?limit=9&offset=${offset}&${this._apiKey}`);
-    return res.data.results.map(this._transformCharacter);
+  const getCharacter = async (id) => {
+    const res = await request(`${_apiBase}characters/${id}?${_apiKey}`);
+    return _transformCharacter(res.data.results[0]);
   };
 
-  getCharacter = async (id) => {
-    const res = await this.getResource(`${this._apiBase}characters/${id}?${this._apiKey}`);
-    return this._transformCharacter(res.data.results[0]);
-  };
-
-  _transformCharacter = (character) => {
+  const _transformCharacter = (character) => {
     return {
       id: character.id,
       name: character.name,
@@ -32,6 +29,8 @@ class MarvelService {
       comics: character.comics.items
     };
   };
+
+  return { loading, error, getAllCharacters, getCharacter, clearError };
 };
 
-export default MarvelService;
+export default useMarvelService;

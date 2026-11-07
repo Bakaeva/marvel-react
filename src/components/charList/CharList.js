@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import PropTypes from 'prop-types';
 import Spinner from '../spinner/Spinner';
 import ErrorMessage from '../errorMessage/ErrorMessage';
-import MarvelService from '../../services/MarvelService';
+import useMarvelService from '../../services/MarvelService';
 import './charList.scss';
 
 const CharListItem = ({ item, setRef, onClick, onKeyDown }) => {
@@ -26,35 +26,23 @@ const CharListItem = ({ item, setRef, onClick, onKeyDown }) => {
 
 const CharList = (props) => {
     const [charList, setCharList] = useState([]);
-    const [loading, setLoading] = useState(true);
     const [newItemsLoading, setNewItemsLoading] = useState(false);
     const [offset, setOffset] = useState(0);
-    const [error, setError] = useState(false);
     const [charEnded, setCharEnded] = useState(false);
 
-    const marvelService = new MarvelService();
-
-    let errMessage = null;
+    const { loading, error, getAllCharacters } = useMarvelService();
 
     useEffect(() => {
-        onRequest();
+        onRequest(offset, true);
     }, []);
 
-    const onRequest = (offset) => {
-        setNewItemsLoading(true);
-        marvelService.getAllCharacters(offset)
+    const onRequest = (offset, initial = false) => {
+        setNewItemsLoading(!initial); // при первом рендере страницы (initial=true) показываем спиннер, при послежующих, по нажатию на кнопку "load more" - не показываем спиннер
+        getAllCharacters(offset)
             .then((newCharList) => {
                 setCharList(prevCharList => [...prevCharList, ...newCharList]);
-                setLoading(false);
-                setNewItemsLoading(false);
                 setOffset(prevOffset => prevOffset + 9);
                 setCharEnded(newCharList.length < 9);
-            })
-            .catch((err) => {
-                errMessage = err.message;
-                setError(true);
-                setLoading(false);
-                setNewItemsLoading(false);
             })
     };
 
@@ -68,13 +56,10 @@ const CharList = (props) => {
 
     return (
         <div className="char__list">
-            {loading ?
+            {loading && !newItemsLoading ?
                 <Spinner />
                 : error ?
-                    <div style={{ display: 'flex', flexDirection: 'column' }}>
-                        <ErrorMessage />
-                        <span style={{ color: 'red', fontSize: '15px', textAlign: 'center' }}>{errMessage}</span>
-                    </div>
+                    <ErrorMessage />
                     :
                     <ul className="char__grid">
                         {charList.map((item, index) => (
@@ -99,7 +84,7 @@ const CharList = (props) => {
             }
             <button
                 className="button button__main button__long"
-                disabled={newItemsLoading}
+                disabled={loading}
                 style={{ 'display': !charEnded ? 'block' : 'none' }}
                 onClick={() => onRequest(offset)}>
                 <div className="inner">load more</div>
